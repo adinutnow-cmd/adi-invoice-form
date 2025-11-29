@@ -1,123 +1,88 @@
-// script.js
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// ----------------- Supabase Config -----------------
+const SUPABASE_URL = "YOUR_URL"; 
+const SUPABASE_KEY = "YOUR_ANON_KEY";
 
-// 👇 حط القيم تبع مشروعك
-const SUPABASE_URL = 'https://xxxxxxxxxx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ----------------- Submit Invoice -----------------
+const form = document.getElementById("invoiceForm");
 
-// اسم جدول الداتا واسم البكت
-const TABLE_NAME = 'invoices';
-const BUCKET_NAME = 'invoice-images';
+if (form) {
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-document.addEventListener('DOMContentLoaded', () => {
-  setupUserForm();   // صفحة index
-  setupAdminTable(); // صفحة admin (اللي انت عاملها ومشي حالها)
-});
+        let full_name = document.getElementById("full_name").value;
+        let phone = document.getElementById("phone").value;
+        let invoice_id = document.getElementById("invoice_id").value;
+        let imageFile = document.getElementById("image").files[0];
 
-// =======================
-// 1) كود صفحة الـ USER (index)
-// =======================
-function setupUserForm() {
-  const form = document.getElementById('invoiceForm');
-  if (!form) return; // يعني مش بهالصفحة
+        if (!imageFile) return alert("Please upload an image!");
 
-  const statusEl = document.getElementById('status');
-  const submitBtn = document.getElementById('submitBtn');
+        // Upload image to bucket
+        let fileName = `${Date.now()}_${imageFile.name}`;
+        let { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from("invoice-images")
+            .upload(fileName, imageFile);
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    statusEl.textContent = '';
-    statusEl.style.color = '#000';
+        if (uploadError) return alert("Upload error: " + uploadError.message);
 
-    const fullName = document.getElementById('fullName').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const invoiceId = document.getElementById('invoiceId').value.trim();
-    const fileInput = document.getElementById('invoiceImage');
-    const file = fileInput.files[0];
+        // Get public URL
+        let { data: publicUrl } = supabaseClient.storage
+            .from("invoice-images")
+            .getPublicUrl(fileName);
 
-    if (!fullName || !phone || !invoiceId || !file) {
-      statusEl.textContent = 'Please fill in all fields and select an image.';
-      statusEl.style.color = 'red';
-      return;
-    }
+        // Insert into DB
+        let { data, error } = await supabaseClient
+            .from("invoices")
+            .insert({
+                full_name,
+                phone,
+                invoice_id,
+                image_url: publicUrl.publicUrl,
+                status: "pending"
+            });
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
+        if (error) {
+            alert("Database error: " + error.message);
+        } else {
+            document.getElementById("result").innerText = "Invoice Submitted Successfully!";
+            form.reset();
+        }
+    });
+}
 
-    try {
-      // 1) check if invoice_id already exists
-      const { data: existing, error: dupErr } = await supabase
-        .from(TABLE_NAME)
-        .select('id')
-        .eq('invoice_id', invoiceId)
-        .maybeSingle();
+// ----------------- Admin Page (Load Data) -----------------
+async function loadAdminTable() {
+    const table = document.getElementById("invoiceTable");
+    if (!table) return;
 
-      if (dupErr) throw dupErr;
+    let { data, error } = await supabaseClient
+        .from("invoices")
+        .select("*")
+        .order("id", { ascending: false });
 
-      if (existing) {
-        statusEl.textContent = 'This invoice ID has already been submitted.';
-        statusEl.style.color = 'red';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Invoice';
+    if (error) {
+        table.innerHTML = "<tr><td colspan='7'>Error loading invoices</td></tr>";
         return;
-      }
-
-      // 2) upload image to bucket
-      const ext = file.name.split('.').pop();
-      const path = `invoices/${invoiceId}_${Date.now()}.${ext}`;
-
-      const { data: uploadData, error: uploadErr } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .upload(path, file);
-
-      if (uploadErr) throw uploadErr;
-
-      // 3) get public URL
-      const { data: publicUrlData } = supabase
-        .storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(uploadData.path);
-
-      const imageUrl = publicUrlData.publicUrl;
-
-      // 4) insert row into invoices table
-      const { error: insertErr } = await supabase
-        .from(TABLE_NAME)
-        .insert({
-          full_name: fullName,
-          phone: phone,
-          invoice_id: invoiceId,
-          image_url: imageUrl,
-          status: 'pending'
-        });
-
-      if (insertErr) throw insertErr;
-
-      statusEl.textContent = 'Invoice submitted successfully. Thank you!';
-      statusEl.style.color = 'green';
-      form.reset();
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = 'Unexpected error, please try again later.';
-      statusEl.style.color = 'red';
     }
 
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit Invoice';
-  });
+    table.innerHTML = "";
+
+    data.forEach(row => {
+        let tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${row.id}</td>
+            <td>${row.created_at ?? ""}</td>
+            <td>${row.full_name}</td>
+            <td>${row.phone}</td>
+            <td>${row.invoice_id}</td>
+            <td><img src="${row.image_url}" class="invoice-image"></td>
+            <td class="status-${row.status}">${row.status}</td>
+        `;
+
+        table.appendChild(tr);
+    });
 }
 
-// =======================
-// 2) كود صفحة الـ ADMIN (موجود أصلاً عندك)
-// =======================
-
-async function setupAdminTable() {
-  const adminTable = document.getElementById('adminTableBody');
-  if (!adminTable) return; // يعني مش بصفحة الادمن
-
-  // هون خلي نفس الكود اللي كتبناه قبل لعرض الداتا بالجدول
-  // من supabase.from('invoices').select('*').order('created_at', { ascending: false })
-}
+loadAdminTable();
