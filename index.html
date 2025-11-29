@@ -9,37 +9,43 @@
 <body>
 
 <div class="card">
+  <div class="logo-wrap">
+    <img src="logo.png" alt="Company Logo" />
+  </div>
+
   <h1 class="title">Customer Invoice Form</h1>
   <p class="subtitle">Please fill in the form and upload your invoice.</p>
 
   <form id="invoiceForm">
     <div class="form-group">
-      <label>Full Name *</label>
-      <input type="text" id="fullName" required />
+      <label for="full_name">Full Name *</label>
+      <input type="text" id="full_name" required />
     </div>
 
     <div class="form-group">
-      <label>Phone Number *</label>
+      <label for="phone">Phone Number *</label>
       <input type="tel" id="phone" required />
     </div>
 
     <div class="form-group">
-      <label>Invoice ID *</label>
-      <input type="text" id="invoiceId" required />
+      <label for="invoice_id">Invoice ID *</label>
+      <input type="text" id="invoice_id" required />
     </div>
 
     <div class="form-group">
-      <label>Invoice Image *</label>
-      <input type="file" id="invoiceImage" accept="image/*" required />
+      <label for="image">Invoice Image *</label>
+      <input type="file" id="image" accept="image/*" capture="environment" required />
     </div>
 
-    <button type="submit" id="submitBtn">Submit Invoice</button>
+    <button type="submit" id="submitBtn">Submit Invoice ✔</button>
 
-    <p id="status"></p>
+    <p id="status" class="status-text"></p>
   </form>
 </div>
 
-<!-- نفس الملف اللي فيه كود صفحة الادمن -->
-<script type="module" src="script.js"></script>
+<!-- Supabase UMD bundle -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+<!-- Your app logic -->
+<script src="script.js"></script>
 </body>
 </html>
