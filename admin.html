@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin — Submitted Invoices</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        img {
+            width: 120px;
+            border-radius: 4px;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Admin — Submitted Invoices</h1>
+
+<table id="invoiceTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Created At</th>
+            <th>Full Name</th>
+            <th>Phone</th>
+            <th>Invoice ID</th>
+            <th>Image</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // -------- 1) إعداد Supabase --------
+    const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // -------- 2) تحميل البيانات --------
+    async function loadInvoices() {
+        const { data, error } = await supabase
+            .from("invoices")
+            .select("*")
+            .order("id", { ascending: false });
+
+        if (error) {
+            console.error("Error loading invoices:", error);
+            return;
+        }
+
+        const tableBody = document.querySelector("#invoiceTable tbody");
+        tableBody.innerHTML = "";
+
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${row.id}</td>
+                <td>${row.created_at}</td>
+                <td>${row.full_name}</td>
+                <td>${row.phone}</td>
+                <td>${row.invoice_id}</td>
+                <td><img src="${row.image_url}" alt="Invoice"></td>
+                <td>${row.status}</td>
+            `;
+
+            tableBody.appendChild(tr);
+        });
+    }
+
+    loadInvoices();
+</script>
+
+</body>
+</html>

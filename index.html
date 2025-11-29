@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer Invoice Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="card">
+  <h1 class="title">Customer Invoice Form</h1>
+  <p class="subtitle">Please fill in the form and upload your invoice.</p>
+
+  <form id="invoiceForm">
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="fullName" required />
+    </div>
+
+    <div class="form-group">
+      <label>Phone Number *</label>
+      <input type="tel" id="phone" required />
+    </div>
+
+    <div class="form-group">
+      <label>Invoice ID *</label>
+      <input type="text" id="invoiceId" required />
+    </div>
+
+    <div class="form-group">
+      <label>Invoice Image *</label>
+      <input type="file" id="invoiceImage" accept="image/*" required />
+    </div>
+
+    <button type="submit" id="submitBtn">Submit Invoice</button>
+
+    <p id="status"></p>
+  </form>
+</div>
+
+<!-- نفس الملف اللي فيه كود صفحة الادمن -->
+<script type="module" src="script.js"></script>
+</body>
+</html>
